@@ -50,22 +50,39 @@ using namespace optimize;
 
 class Rosenbrock : public Function
 {
+private:
+  static constexpr Scalar b = 100;
+
 public:
   Scalar computeValue(const Vector& x) override
   {
     Scalar value = 0.0;
+    Scalar t1 = 0.0;
+    Scalar t2 = 0.0;
     for (Index i = 0; i < x.size() - 1; ++i) {
-      value += 100*(x(i+1) - x(i)*x(i))*(x(i+1) - x(i)*x(i)) + (x(i) - 1)*(x(i) - 1);
+      t1 = x(i+1) - x(i)*x(i);
+      t2 = x(i) - 1;
+      value += b*t1*t1 + t2*t2;
     }
     return value;
   }
 
   Vector computeGradient(const Vector& x) override
   {
-    return Vector {{ 400*x(0)*x(0)*x(0) - 400*x(0)*x(1) + 2*x(0) - 2,
-                     400*x(1)*x(1)*x(1) - 400*x(1)*x(2) - 200*x(0)*x(0) + 202*x(1) - 2,
-                     200*(x(2) - x(1)*x(1))
-                  }};
+    Vector grad(x.size());
+
+    for (Index i = 0; i < x.size() - 1; ++i) {
+      if (i == 0) {
+        grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*x(0) - 2;
+      }
+      if (i > 0 && i < x.size() - 1) {
+        grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*b*(x(i) - x(i-1)*x(i-1)) + 2*x(i) - 2;
+      }
+      if (i+1 == x.size() - 1) {
+        grad(i+1) = 2*b*(x(i+1) - x(i)*x(i));
+      }
+    }
+    return grad;
   }
 };
 ```
@@ -114,9 +131,9 @@ std::cout << state << std::endl;
 Output:
 
 ```
-Iterations = 16
-Duration = 0.2501
-Success = 1
+Iterations = 15
+Duration = 0.258
+Success = true
 f = 7.75
 x =  0.5  0.5 0.35
 g = -51  29  20
@@ -137,9 +154,9 @@ std::cout << solver << std::endl;
 Output:
 
 ```
-Iterations = 16
-Duration = 0.2501
-Success = 1
+Iterations = 15
+Duration = 0.258
+Success = true
 f = 7.75
 x =  0.5  0.5 0.35
 g = -51  29  20
@@ -178,7 +195,7 @@ int main()
 Output:
 
 ```
-f = 2.51088e-18
+f = 2.51087e-18
 x = 1 1 1
 ```
 
@@ -222,9 +239,9 @@ int main()
 Output:
 
 ```
-Iteration 5: f = 545.713
-Iteration 10: f = 110.614
-Iteration 15: f = 8.86398
+Iteration 5: f = 540.667
+Iteration 10: f = 44.059
+Iteration 15: f = 7.75
 f = 7.75
 x =  0.5  0.5 0.35
 ```
@@ -296,7 +313,7 @@ The L-BFGS-B authors utilize the interpolation-based More-Thuente line search in
 
 This library does not use fixed-size Eigen matrices. Using fixed-size matrices allows Eigen to unroll loops and avoid dynamic memory allocation, which can be beneficial for performance if the size of the matrices are small.
 
-I have tested a fixed-size matrix implementation of this library as a performance test, and there is a marginal speedup when the parameter vector `x` is small (this may vary depending on what SIMD instruction sets are supported on your machine). This should taper off as the size of `x` gets larger.
+A fixed-size matrix implementation of this library has been tested, and there is a marginal speedup when the parameter vector `x` is small (this may vary depending on what SIMD instruction sets are supported on your machine). This should taper off as the size of `x` gets larger.
 
 The main drawbacks to using fixed-size matrices are:
 
@@ -313,6 +330,6 @@ For issues and bugs, submit an [Issue](https://github.com/droemer7/l-bfgs-b/issu
 ## References
 
 1. J. Nocedal and S. Wright. _Numerical Optimization_, 2nd edition, Springer, 2006.
-2. R. H. Byrd, P. Lu, J. Nocedal and C. Zhu, _A Limited Memory Algorithm for Bound Constrained Optimization_, Tech. Report, NAM-08, EECS Department, Northwestern University, 1994.
-3. C. Zhu, R.H. Byrd, P. Lu, and J. Nocedal, _L-BFGS-B: FORTRAN Subroutines for Large-Scale Bound Constrained Optimization_, EECS Department, Northwestern University, 1996.
-4. A. S. Lewis and M. L. Overton. _Nonsmooth optimization via quasi-Newton methods_, Mathematical Programming, Vol 141, No 1, pp. 135-163, 2013.
+2. R. H. Byrd, P. Lu, J. Nocedal and C. Zhu, "A Limited Memory Algorithm for Bound Constrained Optimization", Tech. Report, NAM-08, EECS Department, Northwestern University, 1994.
+3. C. Zhu, R.H. Byrd, P. Lu, and J. Nocedal, "L-BFGS-B: FORTRAN Subroutines for Large-Scale Bound Constrained Optimization", EECS Department, Northwestern University, 1996.
+4. A. S. Lewis and M. L. Overton. "Nonsmooth optimization via quasi-Newton methods", Mathematical Programming, Vol 141, No 1, pp. 135-163, 2013.
