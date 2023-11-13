@@ -34,20 +34,20 @@ namespace optimize
 
     Vector computeGradient(const Vector& x) override
     {
-      Vector grad(x.size());
+      Vector g(x.size());
 
       for (Index i = 0; i < x.size() - 1; ++i) {
         if (i == 0) {
-          grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*x(0) - 2;
+          g(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*x(0) - 2;
         }
         if (i > 0 && i < x.size() - 1) {
-          grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*b*(x(i) - x(i-1)*x(i-1)) + 2*x(i) - 2;
+          g(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*b*(x(i) - x(i-1)*x(i-1)) + 2*x(i) - 2;
         }
         if (i+1 == x.size() - 1) {
-          grad(i+1) = 2*b*(x(i+1) - x(i)*x(i));
+          g(i+1) = 2*b*(x(i+1) - x(i)*x(i));
         }
       }
-      return grad;
+      return g;
     }
   };
 }
