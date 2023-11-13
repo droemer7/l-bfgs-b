@@ -79,13 +79,13 @@ ax.plot(X_lby, Y_lby, [0, 0], color="black", linewidth=1.5)  # y lower bound
 ax.plot(X_uby, Y_uby, [0, 0], color="black", linewidth=1.5)  # y upper bound
 
 # Constraint planes
-ax.plot_surface(X_lbx, Y_lbx_mesh, Z_lbx_mesh, color="gray", linewidth=0, alpha=0.6)  # x lower bound
-ax.plot_surface(X_ubx, Y_ubx_mesh, Z_ubx_mesh, color="gray", linewidth=0, alpha=0.6)  # x upper bound
-ax.plot_surface(X_lby_mesh, Y_lby, Z_lby_mesh, color="gray", linewidth=0, alpha=0.6)  # y lower bound
-ax.plot_surface(X_uby_mesh, Y_uby, Z_uby_mesh, color="gray", linewidth=0, alpha=0.6)  # y upper bound
+ax.plot_surface(X_lbx, Y_lbx_mesh, Z_lbx_mesh, color="gray", linewidth=0, alpha=0.5)  # x lower bound
+ax.plot_surface(X_ubx, Y_ubx_mesh, Z_ubx_mesh, color="gray", linewidth=0, alpha=0.5)  # x upper bound
+ax.plot_surface(X_lby_mesh, Y_lby, Z_lby_mesh, color="gray", linewidth=0, alpha=0.5)  # y lower bound
+ax.plot_surface(X_uby_mesh, Y_uby, Z_uby_mesh, color="gray", linewidth=0, alpha=0.5)  # y upper bound
 
 # Function surface
-ax.plot_surface(Xf, Yf, Zf, cmap=cm.rainbow, alpha=0.75)
+ax.plot_surface(Xf, Yf, Zf, cmap=cm.rainbow, alpha=0.8)
 
 # Initialize line for solver path
 line = ax.plot([], [], [], color="black", linewidth=2)[0]
