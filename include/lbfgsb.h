@@ -9,9 +9,6 @@
 
 #include <Eigen/LU>         // lu()
 
-// Copyright (c) 2023 Dane Roemer droemer7@gmail.com
-// Distributed under the terms of the MIT License
-
 #include "function.h"       // Function
 #include "line_search.h"    // LewisOverton
 #include "solver.h"         // Solver

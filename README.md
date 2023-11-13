@@ -2,7 +2,7 @@
 
 A lightweight, header-only C++ implementation of L-BFGS-B: the limited-memory BFGS algorithm for box-constrained problems. All code was implemented from the papers listed in the [References](README.md#references) section, namely [2](README.md#references) and [4](README.md#references).
 
-<p align="center"><img src="https://github.com/droemer7/l-bfgs-b/assets/45929033/037b9ddc-cb0e-472f-9b41-6be27b48c926"></p>
+<p align="center"><img src="https://github.com/droemer7/lbfgsb/assets/45929033/4e95ed27-5928-4f75-b27a-8e435a8954d8"></p>
 
 <details><summary><b>Algorithm Overview</b></summary>
 L-BFGS-B is a limited-memory, Quasi-Newton method which seeks to find a <i>local</i> solution of optimization problems of the form:
@@ -71,20 +71,20 @@ public:
 
   Vector computeGradient(const Vector& x) override
   {
-    Vector grad(x.size());
+    Vector g(x.size());
 
     for (Index i = 0; i < x.size() - 1; ++i) {
       if (i == 0) {
-        grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*x(0) - 2;
+        g(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*x(0) - 2;
       }
       if (i > 0 && i < x.size() - 1) {
-        grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*b*(x(i) - x(i-1)*x(i-1)) + 2*x(i) - 2;
+        g(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*b*(x(i) - x(i-1)*x(i-1)) + 2*x(i) - 2;
       }
       if (i+1 == x.size() - 1) {
-        grad(i+1) = 2*b*(x(i+1) - x(i)*x(i));
+        g(i+1) = 2*b*(x(i+1) - x(i)*x(i));
       }
     }
-    return grad;
+    return g;
   }
 };
 ```
