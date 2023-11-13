@@ -176,7 +176,7 @@ Note that all elements of the gradient at the solution are large but the gradien
 
 ### Unconstrained Minimization
 
-L-BFGS-B is equally able to handle unconstrained minimization. We can modify the example above to solve the unconstrained problem by simply calling `solver.minimize(f, x)` instead. The constraint vectors `l` and `u` are ommitted from the call and need not be defined.
+L-BFGS-B is equally able to handle unconstrained minimization. We can modify the example above to solve the unconstrained problem by simply calling `solver.minimize(f, x)` instead. The constraint vectors `l` and `u` are omitted from the call and need not be defined.
 
 ```cpp
 int main()
@@ -272,9 +272,7 @@ mkdir build
 cd build
 cmake ..
 make
-./lbfgsb_example_constrained
-./lbfgsb_example_unconstrained
-./lbfgsb_example_callback
+./lbfgsb_test
 ```
 
 ### Running the Examples
@@ -287,7 +285,9 @@ mkdir build
 cd build
 cmake ..
 make
-./lbfgsb_test
+./lbfgsb_example_constrained
+./lbfgsb_example_unconstrained
+./lbfgsb_example_callback
 ```
 
 ## Implementation Details
@@ -311,7 +311,7 @@ The two versions are:
 
 The L-BFGS-B authors utilize the interpolation-based More-Thuente line search instead. The Lewis-Overton line search sometimes uses fewer function evaluations than the More-Thuente line search, deferring more computational work to the calculation of a new search direction. The More-Thuente line search on the other hand uses more function evaluations at times and takes bigger steps, and can generate faster convergence for some problems. Future releases of this library may implement the More-Thuente line search.
 
-### Dynamic Eigen Matrices
+### Eigen Matrices
 
 This library does not use fixed-size Eigen matrices. Using fixed-size matrices allows Eigen to unroll loops and avoid dynamic memory allocation, which can be beneficial for performance if the size of the matrices are small.
 
