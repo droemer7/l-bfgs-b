@@ -2,13 +2,14 @@
 
 A lightweight, header-only C++ implementation of L-BFGS-B: the limited-memory BFGS algorithm for box-constrained problems. All code was implemented from the papers listed in the [References](README.md#references) section, namely [2](README.md#references) and [4](README.md#references).
 
-<p align="center"><img src="https://github.com/droemer7/lbfgsb/assets/45929033/4e95ed27-5928-4f75-b27a-8e435a8954d8"></p>
+<p align="center"><img src="https://github.com/droemer7/l-bfgs-b/assets/45929033/9ed71f13-06ae-42ba-bf3b-ead5ccba7b35"></p>
 
 <details><summary><b>Algorithm Overview</b></summary>
 L-BFGS-B is a limited-memory, Quasi-Newton method which seeks to find a <i>local</i> solution of optimization problems of the form:
 <br><br>
 
 ```
+
    min     f(x)
   x ∈ Rⁿ
 
@@ -176,7 +177,7 @@ Note that all elements of the gradient at the solution are large but the gradien
 
 ### Unconstrained Minimization
 
-L-BFGS-B is equally able to handle unconstrained minimization. We can modify the example above to solve the unconstrained problem by simply calling `solver.minimize(f, x)` instead. The constraint vectors `l` and `u` are ommitted from the call and need not be defined.
+L-BFGS-B is equally able to handle unconstrained minimization. We can modify the example above to solve the unconstrained problem by simply calling `solver.minimize(f, x)` instead. The constraint vectors `l` and `u` are omitted from the call and need not be defined.
 
 ```cpp
 int main()
@@ -272,9 +273,7 @@ mkdir build
 cd build
 cmake ..
 make
-./lbfgsb_example_constrained
-./lbfgsb_example_unconstrained
-./lbfgsb_example_callback
+./lbfgsb_test
 ```
 
 ### Running the Examples
@@ -287,7 +286,9 @@ mkdir build
 cd build
 cmake ..
 make
-./lbfgsb_test
+./lbfgsb_example_constrained
+./lbfgsb_example_unconstrained
+./lbfgsb_example_callback
 ```
 
 ## Implementation Details
@@ -311,7 +312,7 @@ The two versions are:
 
 The L-BFGS-B authors utilize the interpolation-based More-Thuente line search instead. The Lewis-Overton line search sometimes uses fewer function evaluations than the More-Thuente line search, deferring more computational work to the calculation of a new search direction. The More-Thuente line search on the other hand uses more function evaluations at times and takes bigger steps, and can generate faster convergence for some problems. Future releases of this library may implement the More-Thuente line search.
 
-### Dynamic Eigen Matrices
+### Eigen Matrices
 
 This library does not use fixed-size Eigen matrices. Using fixed-size matrices allows Eigen to unroll loops and avoid dynamic memory allocation, which can be beneficial for performance if the size of the matrices are small.
 
