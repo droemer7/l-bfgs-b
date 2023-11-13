@@ -2,13 +2,14 @@
 
 A lightweight, header-only C++ implementation of L-BFGS-B: the limited-memory BFGS algorithm for box-constrained problems. All code was implemented from the papers listed in the [References](README.md#references) section, namely [2](README.md#references) and [4](README.md#references).
 
-<p align="center"><img src="https://github.com/droemer7/lbfgsb/assets/45929033/4e95ed27-5928-4f75-b27a-8e435a8954d8"></p>
+<p align="center"><img src="https://github.com/droemer7/l-bfgs-b/assets/45929033/9ed71f13-06ae-42ba-bf3b-ead5ccba7b35"></p>
 
 <details><summary><b>Algorithm Overview</b></summary>
 L-BFGS-B is a limited-memory, Quasi-Newton method which seeks to find a <i>local</i> solution of optimization problems of the form:
 <br><br>
 
 ```
+
    min     f(x)
   x ∈ Rⁿ
 
