@@ -16,7 +16,7 @@ namespace optimize
   using Scalar = double;
   using Eigen::all;
   using Eigen::last;
-  using Index = typename Eigen::Index;
+  using Index = Eigen::Index;
   using Vector = Eigen::VectorXd;
   using Matrix = Eigen::MatrixXd;
   using ScalarLimits = typename std::numeric_limits<Scalar>;
@@ -344,8 +344,8 @@ namespace optimize
     Index r_dir = rows > 0 ? -1 : 1;
     Index c_dir = cols > 0 ? -1 : 1;
 
-    Index r_start = rows > 0 ? x.rows() - 1 : std::max(row_start + rows, 0ll);
-    Index c_start = cols > 0 ? x.cols() - 1 : std::max(col_start + cols, 0ll);
+    Index r_start = rows > 0 ? x.rows() - 1 : std::max(row_start + rows, static_cast<Index>(0));
+    Index c_start = cols > 0 ? x.cols() - 1 : std::max(col_start + cols, static_cast<Index>(0));
 
     Index r = r_start;
     Index c = c_start;
