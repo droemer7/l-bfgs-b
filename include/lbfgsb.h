@@ -64,7 +64,7 @@ namespace optimize
   //
   // Reference: R. H. Byrd, P. Lu, J. Nocedal and C. Zhu, "A Limited Memory Algorithm for Bound Constrained
   //            Optimization", Tech. Report, NAM-08, EECS Department, Northwestern University, 1994.
-  template <class Function, class LineSearch = LewisOverton<Wolfe::strong>>
+  template <class Function, class LineSearch = LewisOverton<Wolfe::weak>>
   class Lbfgsb : public Solver<Function>
   {
   public:
