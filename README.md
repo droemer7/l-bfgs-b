@@ -269,10 +269,6 @@ Lbfgsb<Rosenbrock, LewisOverton<Wolfe::strong>> solver;
 
 To use your own line search, define a new line search class inheriting from `LineSearch`, implement the search method as an override of `operator()`, then create an `Lbfgsb` solver with it as shown above.
 
-### Warm Restart
-
-
-
 ## Build Instructions
 
 This is a header-only library so just include it directly into your project. If you would like to run the examples and unit tests, continue reading below.
