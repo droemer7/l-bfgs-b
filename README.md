@@ -36,7 +36,7 @@ For more information on each step, refer to the papers listed in the [References
 Core features of this library:
 
 * **Simple Interface** - `Lbfgsb` uses reliable default convergence settings, with an accuracy level that can be changed with a single parameter. A duration limit and a limit on the number of function evaluations can also be specified.
-* **Non-Smooth Minimization** - `Lbfgsb` can minimize non-smooth functions by using the default line search method (`Lewis-Overton<Wolfe::weak>`).
+* **Non-Smooth Minimization** - `Lbfgsb` can minimize non-smooth functions by using the default line search method (`LewisOverton<Wolfe::weak>`).
 * **Modifiable Line Search** - `Lbfgsb` has a template parameter for a `LineSearch` object, which the user can change.
 * **Callback Functions** - `Lbfgsb` calls a user-defined callback function after each optimization step, allowing for visibility into the progress of the process.
 * **Stop/Resume** - `Lbfgsb` can be stopped and resumed from the last state by the user.
