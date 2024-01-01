@@ -31,6 +31,10 @@ The algorithm is comprised of the following steps:
 For more information on each step, refer to the papers listed in the [References](README.md#references) section.
 </details>
 
+## Change Log
+
+Please see the [change log](https://github.com/droemer7/l-bfgs-b/tree/master/CHANGELOG.MD) for details on updates.
+
 ## Features
 
 Core features of this library:
@@ -112,7 +116,8 @@ int main()
   Vector l {{-0.5,  0.5, 0.35}};  // Lower bounds on x
   Vector u {{ 0.5,   10,   10}};  // Upper bounds on x
 
-  Lbfgsb<Rosenbrock> solver;                  // Solver using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver;                            // Solver using default stopping conditions
   State state = solver.minimize(f, x, l, u);  // Solve with constraints (solution is f = 7.75 at x = [0.5, 0.5, 0.35])
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)
@@ -195,7 +200,8 @@ int main()
   Rosenbrock f;           // Objective function we wish to minimize
   Vector x {{0, 5, 5}};   // Initial guess
 
-  Lbfgsb<Rosenbrock> solver;            // Solver using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver;                      // Solver using default stopping conditions
   State state = solver.minimize(f, x);  // Solve without constraints
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)
@@ -217,7 +223,7 @@ x = 1 1 1
 If you would like to run some code after each optimization step, such as to update a plot, or log the state, you can define a callback function and pass that to the solver as shown below. This function will be called after each optimization step.
 
 ```cpp
-void exampleCallback(Solver<Rosenbrock>* solver)
+void exampleCallback(Solver* solver)
 {
   const State& state = solver->state();
 
@@ -239,7 +245,8 @@ int main()
   Vector l {{-0.5,  0.5, 0.35}};  // Lower bounds on x
   Vector u {{ 0.5,   10,   10}};  // Upper bounds on x
 
-  Lbfgsb<Rosenbrock> solver(exampleCallback); // Solver with callback function, using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver(exampleCallback);           // Solver with callback function, using default stopping conditions
   State state = solver.minimize(f, x, l, u);  // Solve with constraints (solution is f = 7.75 at x = [0.5, 0.5, 0.35])
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)

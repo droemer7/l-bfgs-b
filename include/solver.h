@@ -16,21 +16,19 @@ namespace optimize
   // Solver base class
   // Executes the high level optimization procedure, calling on the derived class to perform the optimization step
   // which computes a new state.
-  template <class Function>
   class Solver
   {
   public:
-    using Callback = std::function<void (Solver<Function>*)>;
+    using Callback = std::function<void (Solver*)>;
 
   public:
     // Constructors and destructors
-    explicit Solver(const Scalar accuracy = 0.7,                        // Accuracy level 0 to 1, where 1 is maximum accuracy
-                    const Scalar duration_max = 0,                      // Maxmimum duration (milliseconds) (0 = unlimited)
-                    const Index f_evals_max = 0,                        // Maxmimum number of function evaluations (0 = unlimited)
-                    const Callback& callback = [](Solver<Function>*) {} // Callback function which is executed after each optimization step
+    explicit Solver(const Scalar accuracy = 0.7,              // Accuracy level 0 to 1, where 1 is maximum accuracy
+                    const Scalar duration_max = 0.0,          // Maxmimum duration (milliseconds) (0 = unlimited)
+                    const Index f_evals_max = 0,              // Maxmimum number of function evaluations (0 = unlimited)
+                    const Callback& callback = [](Solver*) {} // Callback function which is executed after each optimization step
                    ) :
       n(0),
-      f(),
       l(Vector::Zero(n)),
       u(Vector::Zero(n)),
       curr_state(),
@@ -46,9 +44,9 @@ namespace optimize
                   );
     }
 
-    explicit Solver(const Callback& callback) :
+    explicit Solver(Callback& callback) :
       Solver(0.7,       // accuracy
-             0,         // duration_max
+             0.0,       // duration_max
              0,         // f_evals_max
              callback   // callback
             )
@@ -57,27 +55,23 @@ namespace optimize
     virtual ~Solver() = default;
 
     // Friend operator <<
-    template <class F>
-    friend std::ostream& operator<<(std::ostream& os, const Solver<F>& solver);
+    friend std::ostream& operator<<(std::ostream& os, const Solver& solver);
 
     // Initializes the state for each new optimization
-    void initialize(const Function& f,
+    void initialize(Function& f,
                     const Iterate& iterate,
                     const Vector& l = Vector(),
                     const Vector& u = Vector()
                    )
     {
-      // Reset the start time
-      start_time = Clock::now();
+      start_time = Clock::now();  // Reset the start time
+      n = iterate.x.size();       // Save the size of the parameter vector x
 
-      // Copy the function and constraints
-      n = iterate.x.size();
-      this->f = f;
-      this->f.reset();
+      // Form constraints as unbounded if not specified
       this->l = l.size() == 0 ? Vector::Constant(n, ScalarLimits::lowest()) : l;
       this->u = u.size() == 0 ? Vector::Constant(n, ScalarLimits::max()) : u;
 
-      // Resize l and u if necessary
+      // Resize l and u if necessary, handling the case if the user specified l and u with sizes that don't match x
       Scalar l_size = this->l.size();
       Scalar u_size = this->u.size();
       this->l.conservativeResize(n);
@@ -103,11 +97,12 @@ namespace optimize
       curr_state.x() = clip(curr_state.x(), this->l, this->u);
       prev_state = curr_state;
 
-      reset();            // Reset the algorithm's internal data
-      updateState(true);  // Compute initial solver state with convergence data
+      f.reset();              // Reset the number of function calls made
+      reset();                // Reset the algorithm's internal data
+      updateState(f, false);  // Compute initial solver state with convergence data
     }
 
-    void initialize(Function f,
+    void initialize(Function& f,
                     const Vector& x,
                     const Vector& l = Vector(),
                     const Vector& u = Vector()
@@ -116,39 +111,39 @@ namespace optimize
 
     // Minimizes the function f starting from x and subject to bound constraints l and u.
     // Returns the full state when the convergence criteria is met or the solver is stopped.
-    const State& minimize(Function f,
+    const State& minimize(Function& f,
                           const Vector& x,
                           const Vector& l = Vector(),
                           const Vector& u = Vector()
                          )
     {
       initialize(f, x, l, u); // Initialize the solver for the new minimization problem
-      return minimize();      // Minimize f from the initial state and return the result
+      return minimize(f);     // Minimize f from the initial state and return the result
     }
 
     // Minimizes the function f starting from the specified function state and subject to bound constraints l and u.
     // Returns the full state when the convergence criteria is met or the solver is stopped.
-    const State& minimize(const Function& f,
+    const State& minimize(Function& f,
                           const Iterate& iterate,
                           const Vector& l = Vector(),
                           const Vector& u = Vector()
                          )
     {
       initialize(f, iterate, l, u); // Initialize the solver for the new minimization problem
-      return minimize();            // Minimize f from the initial state and return the result
+      return minimize(f);           // Minimize f from the initial state and return the result
     }
 
     // Minimizes the function f from the current state with previously-specified bound constraints l and u.
     // Returns the full state when the convergence criteria is met or the solver is stopped.
-    const State& minimize()
+    const State& minimize(Function& f)
     {
       curr_state.stopped() = false; // Reset the stopped flag to allow the solver to run
       start_time = Clock::now();    // Reset the start time
 
       // Compute a new state until the solver is done or stopped by the user
       while (!done() && !stopped()) {
-        performStep();  // Perform the optimization step to compute a new iterate
-        updateState();  // Update the solver state with the current iterate
+        performStep(f); // Perform the optimization step to compute a new iterate
+        updateState(f); // Update the solver state with the current iterate
         callback(this); // Execute the user callback function
       }
 
@@ -159,55 +154,6 @@ namespace optimize
     // The solver may be resumed at this state by subsequently calling run().
     void stop()
     { curr_state.stopped() = true; }
-
-    // Updates the solver state with the current iterate
-    void updateState(const bool firstUpdate = false)
-    {
-      // Update convergence data
-      // Skip calculating df and dx norms if the solver was reset because in this case, curr_state == prev_state
-      if (!curr_state.reset()) {
-        curr_state.dfNorm() =   std::abs(curr_state.f() - prev_state.f())
-                              / std::max(std::max(std::abs(curr_state.f()),
-                                                  std::abs(prev_state.f())
-                                                 ),
-                                         static_cast<Scalar>(1.0)
-                                        );
-        curr_state.dxNorm() =   infinityNorm(curr_state.x() - prev_state.x())
-                              / std::max(std::max(infinityNorm(curr_state.x()),
-                                                  infinityNorm(prev_state.x())
-                                                 ),
-                                         static_cast<Scalar>(1.0)
-                                        );
-      }
-      curr_state.gNorm() = infinityNorm(projectedGradient(curr_state.x(), curr_state.g(), l, u));
-
-      // Copy function data
-      curr_state.function = f.state();
-
-      // Check stopping criteria
-      const bool df_min_success = (curr_state.dfNorm() <= stop_state.dfNorm() && !curr_state.reset());
-      const bool dx_min_success = (curr_state.dxNorm() <= stop_state.dxNorm() && !curr_state.reset());
-      const bool g_min_success = (curr_state.gNorm() <= stop_state.gNorm());
-      const bool duration_exceeded = (curr_state.duration() >= stop_state.duration() && stop_state.duration() > 0.0);
-      const bool f_evals_exceeded = (curr_state.fEvals() >= stop_state.fEvals() && stop_state.fEvals() > 0);
-
-      // Update solver statuses
-      curr_state.success() = (   df_min_success
-                              || dx_min_success
-                              || g_min_success
-                             );
-      curr_state.aborted() = (   curr_state.aborted()  // aborted state is controlled by the algorithm, see abort()
-                              || duration_exceeded
-                              || f_evals_exceeded
-                             );
-      curr_state.iter() = firstUpdate ? 0 : curr_state.iter() + 1;
-      end_time = Clock::now();
-      curr_state.duration() += durationMsec(start_time, end_time);
-      start_time = end_time;
-
-      // Update previous state
-      prev_state = curr_state;
-    }
 
     // Sets all solver stopping criteria: accuracy, duration, and number of function evaluations
     void setStopState(const Scalar accuracy,
@@ -273,26 +219,69 @@ namespace optimize
 
   protected:
     // Resets the algorithm's internal data and restarts the optimization at the current iterate
-    virtual void reset()
-    {
-      // Set the reset flag to indicate this is the first optimization step since reset() was called
-      this->curr_state.reset() = true;
-    }
+    virtual void reset() {}
 
     // Performs one optimization step, updating the current and previous iterate
-    virtual void performStep() = 0;
+    virtual void performStep(Function& f) = 0;
 
-    // Aborts the solver at the current state. The solver cannot be resumed from this state.
-    //
-    // This function is a mechanism for the derived algorithm to indicate that, for an algorithm-specific reason,
-    // further progress cannot be made. This may or may not indicate failure; in general it means that the algorithm is
-    // unable to improve from the current state.
-    void abort()
-    { curr_state.aborted() = true; }
+    // Updates the solver state with the current iterate
+    void updateState(Function& f, bool post_step = true)
+    {
+      // If the current x is exactly the same as the previous, the algorithm has stalled
+      const Scalar dx_max = infinityNorm(curr_state.x() - prev_state.x());
+      curr_state.stalled() = dx_max == 0.0;
+
+      // Update convergence data
+      // Skip calculating df and dx norms if current x == previous x
+      if (!curr_state.stalled()) {
+        curr_state.dfNorm() =   std::abs(curr_state.f() - prev_state.f())
+                              / std::max(std::max(std::abs(curr_state.f()),
+                                                  std::abs(prev_state.f())
+                                                 ),
+                                         static_cast<Scalar>(1.0)
+                                        );
+        curr_state.dxNorm() =   dx_max
+                              / std::max(std::max(infinityNorm(curr_state.x()),
+                                                  infinityNorm(prev_state.x())
+                                                 ),
+                                         static_cast<Scalar>(1.0)
+                                        );
+      }
+      curr_state.gNorm() = infinityNorm(projectedGradient(curr_state.x(), curr_state.g(), l, u));
+
+      // Update duration
+      end_time = Clock::now();
+      curr_state.duration() += durationMsec(start_time, end_time);
+      start_time = end_time;
+
+      // Copy function data
+      curr_state.function = f.state();
+
+      // Check stopping criteria
+      const bool df_min_success = (curr_state.dfNorm() <= stop_state.dfNorm() && !curr_state.stalled());
+      const bool dx_min_success = (curr_state.dxNorm() <= stop_state.dxNorm() && !curr_state.stalled());
+      const bool g_min_success = (curr_state.gNorm() <= stop_state.gNorm());
+      const bool duration_exceeded = (curr_state.duration() >= stop_state.duration() && stop_state.duration() > 0.0);
+      const bool f_evals_exceeded = (curr_state.fEvals() >= stop_state.fEvals() && stop_state.fEvals() > 0);
+
+      // Update solver statuses
+      curr_state.success() = (   df_min_success
+                              || dx_min_success
+                              || g_min_success
+                             );
+      curr_state.aborted() = (   curr_state.aborted()
+                              || (curr_state.stalled() && prev_state.stalled())
+                              || duration_exceeded
+                              || f_evals_exceeded
+                             );
+      curr_state.iter() = post_step ? curr_state.iter() + 1 : curr_state.iter();
+
+      // Update previous state
+      prev_state = curr_state;
+    }
 
   protected:
     Index n;              // Size of x
-    Function f;           // Function to be minimized
     Vector l;             // Lower bounds for x
     Vector u;             // Upper bounds for x
     State curr_state;     // Current state
@@ -304,8 +293,7 @@ namespace optimize
   };
 
   // Prints the solver state including termination messages, if any
-  template <class Function>
-  std::ostream& operator<<(std::ostream& os, const Solver<Function>& solver)
+  std::ostream& operator<<(std::ostream& os, const Solver& solver)
   {
     const State& curr_state = solver.curr_state;
     const StopState& stop_state = solver.stop_state;

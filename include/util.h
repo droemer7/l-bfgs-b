@@ -41,7 +41,7 @@ namespace optimize
                          const bool success = false,  // The solver successfully met the convergence criteria
                          const bool stopped = true,   // The solver is stopped but may be resumed
                          const bool aborted = false,  // The solver aborted the optimization and cannot be resumed
-                         const bool reset = false     // The solver was reset at the current iterate, clearing internal data
+                         const bool stalled = false   // The solver is stalled (current x == previous x)
                         ) :
       df_norm(df_norm),
       dx_norm(dx_norm),
@@ -51,7 +51,7 @@ namespace optimize
       success(success),
       stopped(stopped),
       aborted(aborted),
-      reset(reset)
+      stalled(stalled)
     {}
 
     Scalar df_norm;   // Normalized delta in the function value, |fk+1 - fk|/max(|fk|, |fk+1|, 1)
@@ -62,7 +62,7 @@ namespace optimize
     bool success;     // The solver successfully met the convergence criteria
     bool stopped;     // The solver is stopped but may be resumed
     bool aborted;     // The solver aborted the optimization and cannot be resumed
-    bool reset;       // The solver was reset at the current iterate, clearing internal data
+    bool stalled;     // The solver is stalled (current x == previous x)
   };
 
   // Iterate state
@@ -174,7 +174,7 @@ namespace optimize
                    const bool success = false,  // The solver successfully met the convergence criteria
                    const bool stopped = true,   // The solver is stopped but may be resumed
                    const bool aborted = false,  // The solver aborted the optimization and cannot be resumed
-                   const bool reset = false,    // The solver was reset at the current iterate, clearing internal data
+                   const bool stalled = false,  // The solver is stalled (current x == previous x)
                    const Index f_evals = 0,     // Number of function evaluations
                    const Index g_evals = 0,     // Number of gradient evaluations
                    const Index H_evals = 0      // Number of hessian evaluations
@@ -192,7 +192,7 @@ namespace optimize
                         success,  // success
                         stopped,  // stopped
                         aborted,  // aborted
-                        reset     // reset
+                        stalled   // stalled
                        ),
             FunctionState(f_evals,   // f_evals
                           g_evals,   // g_evals
@@ -221,7 +221,7 @@ namespace optimize
     const bool& success()    const { return solver.success; }
     const bool& stopped()    const { return solver.stopped; }
     const bool& aborted()    const { return solver.aborted; }
-    const bool& reset()      const { return solver.reset; }
+    const bool& stalled()    const { return solver.stalled; }
 
     Scalar& dfNorm()   { return solver.df_norm; }
     Scalar& dxNorm()   { return solver.dx_norm; }
@@ -231,7 +231,7 @@ namespace optimize
     bool& success()    { return solver.success; }
     bool& stopped()    { return solver.stopped; }
     bool& aborted()    { return solver.aborted; }
-    bool& reset()      { return solver.reset; }
+    bool& stalled()    { return solver.stalled; }
 
     // Function state accesor methods
     const Index& fEvals() const { return function.f_evals; }

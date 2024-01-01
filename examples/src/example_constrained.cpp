@@ -14,7 +14,8 @@ int main()
   Vector l {{-0.5,  0.5, 0.35}};  // Lower bounds on x
   Vector u {{ 0.5,   10,   10}};  // Upper bounds on x
 
-  Lbfgsb<Rosenbrock> solver;                  // Solver using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver;                            // Solver using default stopping conditions
   State state = solver.minimize(f, x, l, u);  // Solve with constraints (solution is f = 7.75 at x = [0.5, 0.5, 0.35])
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)

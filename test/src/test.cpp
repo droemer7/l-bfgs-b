@@ -15,10 +15,11 @@ constexpr bool SHOW_RESULTS = false;
 
 #define LBFGSB_TEST_CASE(line_search, function, description, x, l, u, true_min)         \
   TEST(Lbfgsb##_##line_search, function##_##description) {                              \
-    Lbfgsb<function, line_search> solver;                                               \
-    Scalar solver_min = solver.minimize(function(), Vector x, Vector l, Vector u).f();  \
+    function f;                                                                         \
+    Lbfgsb<line_search> solver;                                                         \
+    Scalar solver_min = solver.minimize(f, Vector x, Vector l, Vector u).f();           \
     EXPECT_NEAR(solver_min, true_min, MAX_ERROR);                                       \
-    EXPECT_TRUE(solver.state().success());                                       \
+    EXPECT_TRUE(solver.state().success());                                              \
     if (SHOW_RESULTS) { std::cout << std::endl << solver << std::endl; }                \
   }
 

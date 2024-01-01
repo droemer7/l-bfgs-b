@@ -64,26 +64,26 @@ namespace optimize
   //
   // Reference: R. H. Byrd, P. Lu, J. Nocedal and C. Zhu, "A Limited Memory Algorithm for Bound Constrained
   //            Optimization", Tech. Report, NAM-08, EECS Department, Northwestern University, 1994.
-  template <class Function, class LineSearch = LewisOverton<Wolfe::weak>>
-  class Lbfgsb : public Solver<Function>
+  template <class LineSearch = LewisOverton<Wolfe::weak>>
+  class Lbfgsb : public Solver
   {
   public:
     using IndexSet = std::vector<Index>;
     using BreakpointSet = std::vector<Breakpoint>;
-    using typename Solver<Function>::Callback;
+    using Solver::Callback;
 
   public:
     // Constructors and destructors
-    explicit Lbfgsb(const Scalar accuracy = 0.7,                                   // Accuracy level 0 to 1, where 1 is maximum accuracy
-                    const Scalar duration_max = 0,                                 // Maxmimum duration (milliseconds) (0 = unlimited)
-                    const Index f_evals_max = 0,                                   // Maxmimum number of function evaluations (0 = unlimited)
-                    const Callback& callback = Callback([](Solver<Function>*) {})  // Callback function which is executed after each optimization step
+    explicit Lbfgsb(const Scalar accuracy = 0.7,              // Accuracy level 0 to 1, where 1 is maximum accuracy
+                    const Scalar duration_max = 0.0,          // Maxmimum duration (milliseconds) (0 = unlimited)
+                    const Index f_evals_max = 0,              // Maxmimum number of function evaluations (0 = unlimited)
+                    const Callback& callback = [](Solver*) {} // Callback function which is executed after each optimization step
                    ) :
-      Solver<Function>(accuracy,      // accuracy
-                       duration_max,  // duration_max
-                       f_evals_max,   // f_evals_max
-                       callback       // callback
-                      ),
+      Solver(accuracy,      // accuracy
+             duration_max,  // duration_max
+             f_evals_max,   // f_evals_max
+             callback       // callback
+            ),
       m_max(5),
 
       line_search(),
@@ -116,7 +116,7 @@ namespace optimize
 
   explicit Lbfgsb(const Callback& callback) :
     Lbfgsb(0.7,       // accuracy
-           0,         // duration_max
+           0.0,       // duration_max
            0,         // f_evals_max
            callback   // callback
           )
@@ -126,17 +126,14 @@ namespace optimize
     // Resets the algorithm's internal data
     void reset() override
     {
-      // Set the reset flag to indicate this is the first optimization step since reset() was called
-      this->curr_state.reset() = true;
-
       // Initialize BFGS information and matrices
       m = 0;
       th = 1.0;
       th_inv = 1.0;
 
-      I = Matrix::Identity(this->n, this->n);
-      S = Matrix::Zero(this->n, 1);
-      Y = Matrix::Zero(this->n, 1);
+      I = Matrix::Identity(n, n);
+      S = Matrix::Zero(n, 1);
+      Y = Matrix::Zero(n, 1);
       SS = Matrix::Zero(1, 1);
       SY = Matrix::Zero(1, 1);
       YY = Matrix::Zero(1, 1);
@@ -144,29 +141,26 @@ namespace optimize
       D = Matrix::Zero(1, 1);
       R_inv = Matrix::Zero(1, 1);
 
-      W = Matrix::Zero(this->n, 2);
-      Wb = Matrix::Zero(this->n, 2);
+      W = Matrix::Zero(n, 2);
+      Wb = Matrix::Zero(n, 2);
 
       M = Matrix::Zero(2, 2);
       Mb = Matrix::Zero(2, 2);
 
       c = Vector::Zero(2);
 
-      free_set.reserve(this->n);
+      free_set.reserve(n);
       free_set.clear();
-      active_set.reserve(this->n);
+      active_set.reserve(n);
       active_set.clear();
     }
 
     // Performs one optimization step of the algorithm, updating the current and previous iterate
-    void performStep() override
+    void performStep(Function& f) override
     {
       // Create aliases for readability
-      Function& f = this->f;
-      const Vector& l = this->l;
-      const Vector& u = this->u;
-      Iterate& prev = this->prev_state.iterate;
-      Iterate& curr = this->curr_state.iterate;
+      Iterate& prev = prev_state.iterate;
+      Iterate& curr = curr_state.iterate;
 
       Vector xc = cauchyPoint(curr.x, curr.g, l, u);                // Compute the generalized Cauchy point xc
       Vector d = searchDir(xc, curr.x, curr.g, l, u);               // Compute the search direction d
@@ -182,15 +176,10 @@ namespace optimize
         updateMatrices(curr.x - prev.x,   // Update the limited memory matrices
                        curr.g - prev.g
                       );
-        this->curr_state.reset() = false; // Clear the reset flag now a new iterate has been successfully computed
       }
       // A suitable step was not found: discard all correction pairs and restart along the steepest descent direction
-      else if (!this->curr_state.reset()) {
-        reset();
-      }
-      // Restarting along the steepest descent direction failed, abort
       else {
-        this->abort();
+        reset();
       }
     }
 
@@ -214,8 +203,8 @@ namespace optimize
       // Set xc = x to start - we will modify xc if/when appropriate during the search
       Vector xc = x;
       BreakpointSet breakpoints;
-      Vector t = Vector::Zero(this->n);
-      Vector d = Vector::Zero(this->n);
+      Vector t = Vector::Zero(n);
+      Vector d = Vector::Zero(n);
       Vector p = Vector::Zero(W.cols());
       Vector w = Vector::Zero(W.cols());
       c = Vector::Zero(W.cols());
@@ -234,7 +223,7 @@ namespace optimize
       Scalar zb = 0;
 
       // Calculate breakpoints t(i) and descent directions d(i)
-      for (Index i = 0; i < this->n; ++i) {
+      for (Index i = 0; i < n; ++i) {
         // Calculate breakpoints t(i)
         if (g(i) < 0) {
           t(i) = (x(i) - u(i))/g(i);
@@ -323,7 +312,7 @@ namespace optimize
       //       removing indexes for xc(i) that are NOT at their bound because usually t_min < t_end, and
       //       xc(i) = x(i) + t_min*d(i). Since the minimum is found at t_min, we should compute all xc(i) for
       //       t(i) >= t_min and then remove i from F if t(i) == t_min, because that means xc(i) will be at its bound.
-      for (Index i = 0; i < this->n; ++i) {
+      for (Index i = 0; i < n; ++i) {
         // If q is past the end of the breakpoint array, there are no free variables.
         // Either: 1) There were no breakpoints t(i) > 0, so all xc(i) are already bounded (and xc == x from
         //            initialization)
@@ -560,7 +549,7 @@ namespace optimize
     Matrix Mb;       // Matrix Mb from the L-BFGS-B paper (2m x 2m)
 
     Vector c;        // Vector which represents a component needed to compute the reduced gradient of free
-                            // variables at the Cauchy point (2m x 1)
+                     // variables at the Cauchy point (2m x 1)
 
     IndexSet free_set;      // Set of free (unconstrained) indexes (tf x 1)
     IndexSet active_set;    // Set of active (constrained) indexes (ta x 1)
