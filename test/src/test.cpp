@@ -15,9 +15,11 @@ constexpr bool SHOW_RESULTS = false;
 
 #define LBFGSB_TEST_CASE(line_search, function, description, x, l, u, true_min)         \
   TEST(Lbfgsb##_##line_search, function##_##description) {                              \
-    Lbfgsb<function, line_search> solver;                                               \
-    Scalar solver_min = solver.minimize(function(), Vector x, Vector l, Vector u).f();  \
+    function f;                                                                         \
+    Lbfgsb<line_search> solver;                                                         \
+    Scalar solver_min = solver.minimize(f, Vector x, Vector l, Vector u).f();           \
     EXPECT_NEAR(solver_min, true_min, MAX_ERROR);                                       \
+    EXPECT_TRUE(solver.state().success());                                              \
     if (SHOW_RESULTS) { std::cout << std::endl << solver << std::endl; }                \
   }
 
@@ -75,6 +77,39 @@ LBFGSB_TEST(Simple,             // Objective function
             ({{  10,   10}}),   // Upper bound
             0.000000            // Expected minimum
            )
+
+// ============================================================================
+// L-BFGS-B: Non-Smooth Tests
+// ============================================================================
+// Non-Smooth 2D: 0 variables bounded at minimum
+LBFGSB_TEST_CASE(LewisOvertonWeak,  // Line search (only Weak for non-smooth functions)
+                 NonSmooth2D,       // Objective function
+                 0Active,           // Test Description
+                 ({{  -9,    8}}),  // Initial point
+                 ({{ -10,  -10}}),  // Lower bound
+                 ({{  10,   10}}),  // Upper bound
+                 0.000000           // Expected minimum
+                )
+
+// Non-Smooth 2D: 1 variable bounded at minimum: x0 = -5
+LBFGSB_TEST_CASE(LewisOvertonWeak,  // Line search (only Weak for non-smooth functions)
+                 NonSmooth2D,       // Objective function
+                 1Active,           // Test Description
+                 ({{  -9,    8}}),  // Initial point
+                 ({{ -10,  -10}}),  // Lower bound
+                 ({{  -5,   10}}),  // Upper bound
+                 2.924018           // Expected minimum
+                )
+
+// Non-Smooth 2D: 2 variables bounded at minimum: x0 = -5, x1 = 5
+LBFGSB_TEST_CASE(LewisOvertonWeak,  // Line search (only Weak for non-smooth functions)
+                 NonSmooth2D,       // Objective function
+                 2Active,           // Test Description
+                 ({{  -9,    8}}),  // Initial point
+                 ({{ -10,    5}}),  // Lower bound
+                 ({{  -5,   10}}),  // Upper bound
+                 14.397915          // Expected minimum
+                )
 
 // ============================================================================
 // L-BFGS-B: Rosenbrock tests

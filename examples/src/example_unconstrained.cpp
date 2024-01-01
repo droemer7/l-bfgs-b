@@ -12,7 +12,8 @@ int main()
   Rosenbrock f;           // Objective function we wish to minimize
   Vector x {{0, 5, 5}};   // Initial guess
 
-  Lbfgsb<Rosenbrock> solver;            // Solver using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver;                      // Solver using default stopping conditions
   State state = solver.minimize(f, x);  // Solve without constraints
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)

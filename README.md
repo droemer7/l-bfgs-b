@@ -16,7 +16,7 @@ L-BFGS-B is a limited-memory, Quasi-Newton method which seeks to find a <i>local
    s.t.    l ≤ x ≤ u
 ```
 
-where `f(x): Rⁿ -> R` is the objective function, and `l ∈ Rⁿ` and `u ∈ Rⁿ` are lower and upper bounds on the variables in `x`. The function `f(x)` can be nonlinear, but should be smooth and locally convex around the initial guess `x0`.
+where `f(x): Rⁿ -> R` is the objective function, and `l ∈ Rⁿ` and `u ∈ Rⁿ` are lower and upper bounds on the variables in `x`. The function `f(x)` can be nonlinear but should be convex near the initial guess `x0`.
 
 L-BFGS-B is well suited for problems with a large number of variables, and it performs similarly on unconstrained problems as L-BFGS (which can only solve unconstrained problems). It therefore can be considered to supersede L-BFGS. L-BFGS-B has a few drawbacks, however; most notably that it does not converge rapidly and does not take advantage of the structure of the problem.
 
@@ -30,6 +30,20 @@ The algorithm is comprised of the following steps:
 
 For more information on each step, refer to the papers listed in the [References](README.md#references) section.
 </details>
+
+## Change Log
+
+Please see the [change log](https://github.com/droemer7/l-bfgs-b/tree/master/CHANGELOG.MD) for details on updates.
+
+## Features
+
+Core features of this library:
+
+* **Simple Interface** - `Lbfgsb` uses reliable default convergence settings, with an accuracy level that can be changed with a single parameter. A duration limit and a limit on the number of function evaluations can also be specified.
+* **Non-Smooth Minimization** - `Lbfgsb` can minimize non-smooth functions by using the default line search method (`LewisOverton<Wolfe::weak>`).
+* **Modifiable Line Search** - `Lbfgsb` has a template parameter for a `LineSearch` object, which the user can change.
+* **Callback Functions** - `Lbfgsb` calls a user-defined callback function after each optimization step, allowing for visibility into the progress of the process.
+* **Stop/Resume** - `Lbfgsb` can be stopped and resumed from the last state by the user.
 
 ## Requirements
 
@@ -102,7 +116,8 @@ int main()
   Vector l {{-0.5,  0.5, 0.35}};  // Lower bounds on x
   Vector u {{ 0.5,   10,   10}};  // Upper bounds on x
 
-  Lbfgsb<Rosenbrock> solver;                  // Solver using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver;                            // Solver using default stopping conditions
   State state = solver.minimize(f, x, l, u);  // Solve with constraints (solution is f = 7.75 at x = [0.5, 0.5, 0.35])
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)
@@ -135,7 +150,7 @@ Output:
 
 ```
 Iterations = 15
-Duration = 0.258
+Duration = 0.153583
 Success = true
 f = 7.75
 x =  0.5  0.5 0.35
@@ -158,7 +173,7 @@ Output:
 
 ```
 Iterations = 15
-Duration = 0.258
+Duration = 0.153583
 Success = true
 f = 7.75
 x =  0.5  0.5 0.35
@@ -185,7 +200,8 @@ int main()
   Rosenbrock f;           // Objective function we wish to minimize
   Vector x {{0, 5, 5}};   // Initial guess
 
-  Lbfgsb<Rosenbrock> solver;            // Solver using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver;                      // Solver using default stopping conditions
   State state = solver.minimize(f, x);  // Solve without constraints
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)
@@ -198,7 +214,7 @@ int main()
 Output:
 
 ```
-f = 2.51087e-18
+f = 2.68974e-13
 x = 1 1 1
 ```
 
@@ -207,7 +223,7 @@ x = 1 1 1
 If you would like to run some code after each optimization step, such as to update a plot, or log the state, you can define a callback function and pass that to the solver as shown below. This function will be called after each optimization step.
 
 ```cpp
-void exampleCallback(Solver<Rosenbrock>* solver)
+void exampleCallback(Solver* solver)
 {
   const State& state = solver->state();
 
@@ -229,7 +245,8 @@ int main()
   Vector l {{-0.5,  0.5, 0.35}};  // Lower bounds on x
   Vector u {{ 0.5,   10,   10}};  // Upper bounds on x
 
-  Lbfgsb<Rosenbrock> solver(exampleCallback); // Solver with callback function, using default stopping conditions
+  // With C++17 or greater we can omit the "<>"
+  Lbfgsb<> solver(exampleCallback);           // Solver with callback function, using default stopping conditions
   State state = solver.minimize(f, x, l, u);  // Solve with constraints (solution is f = 7.75 at x = [0.5, 0.5, 0.35])
 
   std::cout << "f = " << state.f() << std::endl;             // Minimum of f(x)
@@ -251,10 +268,10 @@ x =  0.5  0.5 0.35
 
 ### Changing the Line Search Method
 
-`Lbfgsb` uses the `LewisOverton<Wolfe::strong>` class as the default line search method, which enforces the strong Wolfe condition for the curvature check. This can be changed by passing a new method to the second template parameter when creating the solver. For example, we can switch to using the `LewisOverton<Wolfe::weak>` version as shown below.
+`Lbfgsb` uses the `LewisOverton<Wolfe::weak>` class as the default line search method, which enforces the weak Wolfe curvature condition for use on non-smooth functions. This can be changed by passing a new method to the second template parameter when creating the solver. For example, we can switch to using the `LewisOverton<Wolfe::strong>` version as shown below (note that this should only be used on smooth functions).
 
 ```cpp
-Lbfgsb<Rosenbrock, LewisOverton<Wolfe::weak>> solver;
+Lbfgsb<Rosenbrock, LewisOverton<Wolfe::strong>> solver;
 ```
 
 To use your own line search, define a new line search class inheriting from `LineSearch`, implement the search method as an override of `operator()`, then create an `Lbfgsb` solver with it as shown above.
@@ -301,16 +318,16 @@ Following the recommendations by the authors in the latest revision of the L-BFG
 
 The line search is the most critical component of L-BFGS-B.
 
-The authors of L-BFGS-B revised their original paper to mention findings that a backtracking line search resulted in poor performance for some problems due to failing to satisfy the curvature condition for the BFGS update step. As a result, they currently recommend using a method that satisifies both Wolfe conditions (i.e., the Armijo sufficient decrease condition _and_ the curvature condition) while enforcing that the step size obeys the constraints `l ≤ x ≤ u`.
+The authors of L-BFGS-B revised their original paper to mention findings that a backtracking line search resulted in poor performance for some problems due to failing to satisfy the curvature condition for the BFGS update step. As a result, they currently recommend using a method that satisifies both Wolfe conditions (i.e., the Armijo sufficient decrease condition and the curvature condition) while enforcing that the step size obeys the constraints `l ≤ x ≤ u`.
 
 This code implements two versions of the Lewis-Overton line search, which both take a parameter specifying the upper bound on the step size so that the constraints on `x` are obeyed. These implementations also return a step length of 0 if they fail to satisfy the conditions, at which point `Lbfgsb` will reset all BFGS matrices and restart the search along the steepest descent direction (as recommended in [3](README.md#references)).
 
 The two versions are:
 
-* `LewisOverton<Wolfe::weak>`: This method follows the Lewis-Overton algorithm and checks for the 'weak' Wolfe condition; i.e., that the gradient increases sufficiently. This method has the benefit that it can, in theory, be used on non-smooth objective functions; however, using `Lbfgsb` on non-smooth functions has not been tested and likely needs modifications.
-* `LewisOverton<Wolfe::strong>`: This method modifies the Lewis-Overton algorithm and checks for the 'strong' Wolfe condition; i.e., that the magnitude of the gradient decreases sufficiently. This method may perform slightly better on smooth functions than `LewisOverton<Wolfe::weak>`, but cannot be used on non-smooth objective functions.
+* `LewisOverton<Wolfe::weak>`: This is the default method and follows the Lewis-Overton algorithm by requiring the 'weak' Wolfe condition; i.e., that the gradient increases sufficiently. This method has the benefit that it can be used on non-smooth objective functions.
+* `LewisOverton<Wolfe::strong>`: This method modifies the Lewis-Overton algorithm to require the 'strong' Wolfe condition; i.e., that the magnitude of the gradient decreases sufficiently. This method may perform slightly better on smooth functions than `LewisOverton<Wolfe::weak>`, but cannot be used on non-smooth objective functions.
 
-The L-BFGS-B authors utilize the interpolation-based More-Thuente line search instead. The Lewis-Overton line search sometimes uses fewer function evaluations than the More-Thuente line search, deferring more computational work to the calculation of a new search direction. The More-Thuente line search on the other hand uses more function evaluations at times and takes bigger steps, and can generate faster convergence for some problems. Future releases of this library may implement the More-Thuente line search.
+The L-BFGS-B authors utilize the interpolation-based More-Thuente line search. The Lewis-Overton line search may use fewer function evaluations than the More-Thuente line search, deferring more computational work to the calculation of a new search direction. The More-Thuente line search on the other hand uses more function evaluations at times and takes bigger steps, generating faster convergence for some problems (but it cannot be used on non-smooth functions). Future releases of this library may implement the More-Thuente line search.
 
 ### Eigen Matrices
 

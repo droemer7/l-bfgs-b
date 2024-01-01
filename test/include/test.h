@@ -42,45 +42,71 @@ namespace optimize
     }
   };
 
+  // f(x) = |x^2/3 * y^2/3 + x^2/3 + y^2/3|
+  // https://www.wolframalpha.com/input?i=plot+abs%28x%5E%282%2F3%29+*+y%5E%282%2F3%29+%2B+x%5E%282%2F3%29+%2B+y%5E%282%2F3%29%29
+  class NonSmooth2D : public Function
+  {
+  public:
+    Scalar computeValue(const Vector& x) override
+    {
+      return std::abs(  std::cbrt(x(0)*x(0)) * std::cbrt(x(1)*x(1))
+                      + std::cbrt(x(0)*x(0))
+                      + std::cbrt(x(1)*x(1))
+                     );
+    }
+
+    Vector computeGradient(const Vector& x) override
+    {
+      Vector g(x.size());
+      Scalar fx = computeValue(x);
+      Scalar sign_fx = fx > 0.0 ?  1.0 :
+                       fx < 0.0 ? -1.0 :
+                                   0.0;
+      g(0) = x(0) != 0.0 ? 2.0*(std::cbrt(x(1)*x(1)) + 1)*sign_fx / (3.0*std::cbrt(x(0))) : ScalarLimits::max();
+      g(1) = x(1) != 0.0 ? 2.0*(std::cbrt(x(0)*x(0)) + 1)*sign_fx / (3.0*std::cbrt(x(1))) : ScalarLimits::max();
+      return g;
+    }
+  };
+
   // Rosenbrock objective function
   // http://www.sfu.ca/~ssurjano/rosen.html
-class Rosenbrock : public Function
-{
-private:
-  static constexpr Scalar b = 100;
-
-public:
-  Scalar computeValue(const Vector& x) override
+  class Rosenbrock : public Function
   {
-    Scalar value = 0.0;
-    Scalar t1 = 0.0;
-    Scalar t2 = 0.0;
-    for (Index i = 0; i < x.size() - 1; ++i) {
-      t1 = x(i+1) - x(i)*x(i);
-      t2 = x(i) - 1;
-      value += b*t1*t1 + t2*t2;
-    }
-    return value;
-  }
+  private:
+    static constexpr Scalar b = 100;
 
-  Vector computeGradient(const Vector& x) override
-  {
-    Vector grad(x.size());
-
-    for (Index i = 0; i < x.size() - 1; ++i) {
-      if (i == 0) {
-        grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*x(0) - 2;
+  public:
+    Scalar computeValue(const Vector& x) override
+    {
+      Scalar value = 0.0;
+      Scalar t1 = 0.0;
+      Scalar t2 = 0.0;
+      for (Index i = 0; i < x.size() - 1; ++i) {
+        t1 = x(i+1) - x(i)*x(i);
+        t2 = x(i) - 1;
+        value += b*t1*t1 + t2*t2;
       }
-      if (i > 0 && i < x.size() - 1) {
-        grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*b*(x(i) - x(i-1)*x(i-1)) + 2*x(i) - 2;
-      }
-      if (i+1 == x.size() - 1) {
-        grad(i+1) = 2*b*(x(i+1) - x(i)*x(i));
-      }
+      return value;
     }
-    return grad;
-  }
-};
+
+    Vector computeGradient(const Vector& x) override
+    {
+      Vector grad(x.size());
+
+      for (Index i = 0; i < x.size() - 1; ++i) {
+        if (i == 0) {
+          grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*x(0) - 2;
+        }
+        if (i > 0 && i < x.size() - 1) {
+          grad(i) = 4*b*(x(i)*x(i)*x(i) - x(i)*x(i+1)) + 2*b*(x(i) - x(i-1)*x(i-1)) + 2*x(i) - 2;
+        }
+        if (i+1 == x.size() - 1) {
+          grad(i+1) = 2*b*(x(i+1) - x(i)*x(i));
+        }
+      }
+      return grad;
+    }
+  };
 
   // Six-Hump Camel objective function
   // http://www.sfu.ca/~ssurjano/camel6.html
