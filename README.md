@@ -33,7 +33,7 @@ For more information on each step, refer to the papers listed in the [References
 
 ## Change Log
 
-Please see the [change log](https://github.com/droemer7/l-bfgs-b/tree/master/CHANGELOG.MD) for details on updates.
+Please see the [change log](https://github.com/droemer7/l-bfgs-b/blob/master/CHANGELOG.md) for details on updates.
 
 ## Features
 
