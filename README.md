@@ -271,7 +271,7 @@ x =  0.5  0.5 0.35
 `Lbfgsb` uses the `LewisOverton<Wolfe::weak>` class as the default line search method, which enforces the weak Wolfe curvature condition for use on non-smooth functions. This can be changed by passing a new method to the second template parameter when creating the solver. For example, we can switch to using the `LewisOverton<Wolfe::strong>` version as shown below (note that this should only be used on smooth functions).
 
 ```cpp
-Lbfgsb<Rosenbrock, LewisOverton<Wolfe::strong>> solver;
+Lbfgsb<LewisOverton<Wolfe::strong>> solver;
 ```
 
 To use your own line search, define a new line search class inheriting from `LineSearch`, implement the search method as an override of `operator()`, then create an `Lbfgsb` solver with it as shown above.
